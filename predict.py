@@ -21,10 +21,12 @@ class CnnModel:
         self.config = TCNNConfig()
         self.words, self.word_to_id = read_vocab(vocab_dir)
         self.config.vocab_size = len(self.words)
+        self.config.pre_trianing = pd.read_csv(word_vector_dir, header=None, index_col=None).values
         self.model = TextCNN(self.config)
         session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
         self.session = tf.Session(config=session_conf)
         self.session.run(tf.global_variables_initializer())
+
         # self.session.run(tf.initialize_local_variables())
         saver = tf.train.Saver()
         saver.restore(sess=self.session, save_path=save_path)  # 读取保存的模型
@@ -93,7 +95,7 @@ class CnnModel:
         df = df[df["publish_to_update_hour"] <= 36]
         df["publish_to_update_hour"] = df["publish_to_update_hour"].apply(lambda x: 1.0 if x <= 3 else math.log(x, 3))
 
-        df.drop(labels=['create_time',"current_time"], axis=1, inplace=True)
+        df.drop(labels=['create_time',"update_time"], axis=1, inplace=True)
 
         wc = word_cutter("data/dict")
         df['title_length'] = df['title'].apply(lambda x: len(wc.clean_html(x)))
@@ -144,6 +146,7 @@ class CnnModel:
                     df_result.loc[index, "score"] = df_entertain_sports_dict.get(row['content_id'])* df_result.loc[index, "score"]
         df_result["score"] = df_result["score"]*1000
         print(df_result.describe())
+        tf.reset_default_graph()
         return df_result.to_json(orient='records')
 
 def run_predict(json_message):
@@ -179,6 +182,25 @@ if __name__ == '__main__':
    'title': '2018物业服务收费包括哪些内容',
    'type': 8,
    'validread': 98,
-   'validshow': 1006}]}
+   'validshow': 1006},
+  {'title': '《皓镧传》聂远化身战国“成功学讲师”',
+   'validshow': 0,
+   'detail': '<p><img data-src="http://static.1sapp.com/lw/img/2019/01/31/e3d8c62c6404bddb134b748eedf04a91.jpeg" data-size="520,320"></p><p>由吴谨言，聂远主演的《皓镧传》近期正在热播，播出两周后，各领域讨论度居高不下，明晚《皓镧传 》继续迎来更新!吕不韦深陷秦国，为秦王孙谋划大业，而在赵国，吕不韦遇刺身亡的消息却让李皓镧崩溃不已。更多精彩剧情即将揭晓!</p><p>《皓镧传》剧情播出还没过半，讨论却在各个圈层进行的如火如荼，跌宕起伏的故事情节，纷杂繁复的人物关系引人入胜，同时，剧中所表达的家国情怀，也引起了诸多关注。预告中可以看到，本周即将更新的剧情中，吕不韦以身试险，亲赴秦 国，为秦王孙嬴异人谋划大业，但在前往秦国途中却遭到公子蛟的暗算，吕不韦机智脱险后即刻奔赴秦国，但在赵国，传回来的却是吕不韦已经身亡的消息，李皓镧万念俱灰，几近崩溃……不离cp 的发展时刻牵动着剧粉们的心，看到预告后，众多剧粉都惊呼：不离cp请不要be!</p><p>除了剧情十分引人关注之外，剧中的不少台词也是深入人心，聂远饰演的吕不韦，在剧中时刻提点督促李 皓镧，也因为其“话痨”的人设被网友们封为“战国成功学讲师”，剧中略显鸡汤的台词，着实让大家看到了当时毒舌傲娇大猪蹄子的影子，但同时也被各路的KOL争相转发，并配以：转发这个吕boy 你将会获得成功等文字!一时间，聂远饰演的吕不韦，成为了剧粉们的新宠!</p>',
+   'content_id': 158470470,
+   'keywords': '吕不韦,皓镧传,聂远,李皓,剧粉,秦国,剧情,成功学',
+   'validread': 0,
+   'create_time': '2019-01-31 13:06:36',
+   'rank': 1,
+   'type': 6},
+  {'title': '福建晋江警方破获“1040阳光工程”传销案，抓获266人',
+   'validshow': 0,
+   'detail': '<p>近日，福建晋江 市公安局破获了一起利用资金盘运作的组织、领导传销案件，抓获各层级传销人员266名，并查获大量用于传销活动的宣传资料、书籍等，涉案金额达一千多万元。2019年1月30日，晋江市公安局 召开新闻发布会，对外通报了这起传销案的相关案情。</p><p><img data-src="http://static.1sapp.com/lw/img/2019/01/31/bb1db76c2160d96b1cadb7f76e9ba34b.jpeg" data-size="1024,1024"></p><p>微博@晋江公安 图</p><p>鼓吹投入数千元最终回报1040万元</p><p>2018年10月20日，晋江市公安局接福建省公安厅转来的线索称，一名吴姓男子报警称其嫂子张某可能陷入传销，地址在晋江池店。</p><p>2018年10月21日凌晨，晋江警方在池店镇桥南片区的一个小区租房内找到张某，一并被找到的还有张某的父亲张某智。</p><p>今年52岁的张某智是湖北人，原本到晋江是帮 侄子照看孩子，2018年6月，他经人介绍，交了4000元投资了一个资金盘。“交完钱之后，就有人带我去听课、聊天，一般都是三、四个人跟我讲课，每个月差不多是听2次课。”张某智说，他并不 知道资金盘具体怎么运作，只知道要拉人头投资。</p><p>女儿张某就是张某智拉进来的，张某今年29岁，湖北人，育有一儿一女，最大的儿子不过6岁，在上幼儿园。因婆媳产生矛盾，张某本就 想着离开老家，刚好父亲在晋江让她一起来投资资金盘，她便来到了晋江，也投了4000元。</p><p>张某来到晋江后，还想拉上丈夫一起来，想向公公借10万元。但张某丈夫不肯，怀疑妻子陷入传销，将此事告知了其弟弟、报警人吴某。吴某向公安机关报了警。</p><p>张氏父女投资所谓资金盘，只需要他们去听课，拉人头、缴纳会费、发展下线，是典型的传销活动特征。泉州市公安局党委委员、晋江市公安局局长陈文荣立即指令苏琪副局长牵头组织，成立由指挥中心、经侦大队、网安大队、池店派出所、紫帽派出所等单位组成的工作专班，立案展开调查。</p><p>经查，一个以徐某龙为首的所谓“1040阳光工程”传销组织浮出水面，该传销组织分为五级三晋制，按投资份额分业务员、组长、主任、经理、老总五个级别，按照投资的份额和下线的人数、级别分三个晋升阶 段：晋升主任、晋升经理、晋升老总。</p><p>传销组织要求参加者最低缴纳3800元，最高缴纳69800元获得加入资格，鼓吹最终回报1040万元欺骗成员，鼓动成员积极发展下线购买份额以牟取非 法利益，并按照一定顺序组成层级，直接或间接以发展人员数量作为计酬的依据，引诱参加者继续发展他人参加，骗取财物，扰乱经济社会秩序。</p><p>出动800多警力抓获266人</p><p>2018年11月26日晚，晋江市公安局组织27个局属单位、派出所警力800多名，在晋江池店、紫帽辖区开展收网行动，抓获各层级传销人员266名，并查获大量用于传销活动的宣传资料、书籍等，涉案金额高达1000多万元。</p><p>据办案民警介绍，在抓获的犯罪嫌疑人里，有一名“老总”张某涛（男，37岁，湖北人），一名体系自律大总管徐某龙（男，33岁，安徽人），还有不少是“家长”。</p><p> 办案民警说，传销组织内部以租住房为单位，设立了诸多小团体家庭，由“家长”负责照看其他成员并组织互相学习。民警捣毁的传销活动窝点就是租住房。</p><p>“传销组织基本都是靠‘杀熟’”，办案民警说，他们打着 “自愿连锁经营”的旗号，采取编造、歪曲国家政策，虚构、夸大经营、投资、服务项目及盈利前景等方式，从身边熟人下手，诱骗他人来到晋江，并交纳3800到69800元不 等的费用加入传销组织。</p><p>据民警介绍，这个传销组织套路是先把亲戚或朋友骗来，带着这些亲戚或朋友游山玩水热情招待两、三天，以此拉近关系，之后带着亲戚或朋友去听课，向他们灌输快速发财致富的思想，骗他们缴纳会费，交了会费的会员会被归入相应的“家庭”，由“家长”统一管理，传授他们发展下线的方法，拉更多的人下水。</p><p>目前，有36人被警方刑事拘留，2人 被监视居住；晋江检察院对情节较重的18人做出批准逮捕决定，其他人员做出直诉等处理。</p><p>晋江警方提醒，无论传销的“外衣”怎么换，要辨别传销的真面目，只需看三个特征：第一，是否需要认购商品或交纳费用取得加入资格；第二，是否需要发展他人成为自己的下线，形成层级关系；第三，是否以直接或间接发展人员的数量为依据计算报酬（奖金）。只要符合这三个特征，就 肯定是传销，千万要提高警惕，防止上当受骗。</p>',
+   'content_id': 158469582,
+   'keywords': '晋江,张某,传销,传销组织,池店,晋江市,传销案,下线',
+   'validread': 0,
+   'create_time': '2019-01-31 13:00:38',
+   'rank': 1,
+   'type': 1}]}
+
     # print(run_predict(test_demo))
     # print(cnn_model.predict(test_demo))

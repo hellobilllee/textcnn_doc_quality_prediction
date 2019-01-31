@@ -21,14 +21,17 @@ class TCNNConfig(object):
     hidden_dim = 128  # 全连接层神经元
 
     dropout_keep_prob = 0.5  # dropout保留比例
-    learning_rate = 1e-3  # 学习率
+    lr = 1e-3  # 学习率
+    lr_decay = 0.9          #learning rate decay
+    clip = 5.0              #gradient clipping threshold
 
     batch_size = 256 # 每批训练大小
     num_epochs = 100  # 总迭代轮次
 
     print_per_batch = 100  # 每多少轮输出一次结果
     save_per_batch = 500  # 每多少轮存入tensorboard
-    disable_word_embeddings = False
+    # disable_word_embeddings = False
+    pre_trianing = None   #use vector_char trained by word2vec
 
 class TextCNN(object):
     """文本分类，CNN模型"""
@@ -46,6 +49,7 @@ class TextCNN(object):
         self.input_x_auxilary = tf.placeholder(tf.float32, [None, self.config.auxilary], name='auxilary')
         self.input_y = tf.placeholder(tf.float32, [None, self.config.num_classes], name='input_y')
         self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
+        self.global_step = tf.Variable(0, trainable=False, name='global_step')
         self.cnn()
 
     def cnn(self):
@@ -53,7 +57,9 @@ class TextCNN(object):
         # 词向量映射
         with tf.device('/cpu:0'), tf.name_scope('embedding'):
             # embedding = tf.get_variable('embedding', [self.config.vocab_size, self.config.embedding_dim])
-            self.embedding = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embedding_dim], -1.0, 1.0), name='word_embedding',trainable=self.config.disable_word_embeddings)
+            # self.embedding = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embedding_dim], -1.0, 1.0), name='word_embedding',trainable=self.config.disable_word_embeddings)
+            self.embedding = tf.get_variable("embeddings", shape=[self.config.vocab_size, self.config.embedding_dim],
+                                             initializer=tf.constant_initializer(self.config.pre_trianing))
             # self.embedding = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embedding_dim], -1.0, 1.0), name='word_embedding',trainable=True)
             embedding_inputs_title = tf.nn.embedding_lookup(self.embedding, self.input_x_title)
             embedding_inputs_content = tf.nn.embedding_lookup(self.embedding, self.input_x_content)
@@ -98,13 +104,13 @@ class TextCNN(object):
         # print("h_pool_flat_content :", h_pool_flat_content .get_shape())
         with tf.name_scope("title-conv-maxpool"):
             # CNN layer
-            conv_title = tf.layers.conv1d(embedding_inputs_title, self.config.title_num_filters, self.config.title_filter_sizes, name='conv_title',reuse=tf.AUTO_REUSE)
+            conv_title = tf.layers.conv1d(embedding_inputs_title, self.config.title_num_filters, self.config.title_filter_sizes, name='conv_title')
             # global max pooling layer
             h_pool_flat_title = tf.reduce_max(conv_title, reduction_indices=[1], name='gmp_title')
             # print("h_pool_flat_title:",h_pool_flat_title.get_shape())
         with tf.name_scope("keyword-conv-maxpool"):
             # CNN layer
-            conv_keyword = tf.layers.conv1d(embedding_inputs_keyword, self.config.keyword_num_filters, self.config.keyword_filter_sizes, name='conv_keyword',reuse=tf.AUTO_REUSE)
+            conv_keyword = tf.layers.conv1d(embedding_inputs_keyword, self.config.keyword_num_filters, self.config.keyword_filter_sizes, name='conv_keyword')
             # global max pooling layer
             h_pool_flat_keyword = tf.reduce_max(conv_keyword, reduction_indices=[1], name='gmp_keyword')
             # print("h_pool_flat_keyword:",h_pool_flat_keyword.get_shape())
@@ -115,21 +121,24 @@ class TextCNN(object):
         # print("concat_input:",concat_input.get_shape())
         with tf.name_scope("score"):
             # 全连接层，后面接dropout以及relu激活
-            fc = tf.layers.dense(concat_input, self.config.hidden_dim, name='fc1',reuse=tf.AUTO_REUSE)
+            fc = tf.layers.dense(concat_input, self.config.hidden_dim, name='fc1')
             fc = tf.contrib.layers.dropout(fc, self.keep_prob)
             fc = tf.nn.relu(fc)
             # print("fc:", fc.get_shape())
             # 分类器
-            self.logits = tf.layers.dense(concat_input, self.config.num_classes, name='fc2',reuse=tf.AUTO_REUSE)
+            self.logits = tf.layers.dense(fc, self.config.num_classes, name='fc2')
             self.y_pred_prob= tf.nn.softmax(self.logits)[:, 1]
             self.y_pred_cls = tf.argmax(tf.nn.softmax(self.logits), 1)  # 预测类别
 
-        with tf.name_scope("optimize"):
-            # 损失函数，交叉熵
-            cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.input_y)
+        with tf.name_scope('loss'):
+            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)
             self.loss = tf.reduce_mean(cross_entropy)
-            # 优化器
-            self.optim = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate).minimize(self.loss)
+
+        with tf.name_scope('optimizer'):
+            optimizer = tf.train.AdamOptimizer(self.config.lr)
+            gradients, variables = zip(*optimizer.compute_gradients(self.loss))
+            gradients, _ = tf.clip_by_global_norm(gradients, self.config.clip)
+            self.optim = optimizer.apply_gradients(zip(gradients, variables), global_step=self.global_step)
 
         with tf.name_scope("accuracy"):
             # 准确率
