@@ -1,0 +1,10 @@
+.DS_Store
+data/news_content
+data/raw_data
+data/train_test_files
+data/w2v
+__pycache__
+.idea
+*.pyc
+checkpoints
+tensorboard
