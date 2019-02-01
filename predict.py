@@ -21,7 +21,7 @@ class CnnModel:
         self.config = TCNNConfig()
         self.words, self.word_to_id = read_vocab(vocab_dir)
         self.config.vocab_size = len(self.words)
-        self.config.pre_trianing = pd.read_csv(word_vector_dir, header=None, index_col=None).values
+        self.config.pre_training = pd.read_csv(word_vector_dir, header=None, index_col=None).values
         self.model = TextCNN(self.config)
         session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
         self.session = tf.Session(config=session_conf)
@@ -128,7 +128,9 @@ class CnnModel:
         }
 
         y_pred_prob = self.session.run(self.model.y_pred_prob, feed_dict=feed_dict)
+        print(y_pred_prob)
         df["score"] = pd.Series(y_pred_prob)
+
         df_result = df[["content_id","score"]]
         if len(df_notype):
             df_result = pd.concat([df_result,df_notype],axis=0)

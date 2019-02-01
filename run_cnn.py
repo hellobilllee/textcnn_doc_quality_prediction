@@ -266,7 +266,7 @@ if __name__ == '__main__':
         generate_w2v()
     else:
         print("load w2v embeddings")
-        config.pre_trianing = pd.read_csv(word_vector_dir, header=None, index_col=None).values
+        config.pre_training = pd.read_csv(word_vector_dir, header=None, index_col=None).values
     model = TextCNN(config)
 
     if sys.argv[1] == 'train' and len(sys.argv)==3:

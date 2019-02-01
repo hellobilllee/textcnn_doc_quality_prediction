@@ -31,7 +31,7 @@ class TCNNConfig(object):
     print_per_batch = 100  # 每多少轮输出一次结果
     save_per_batch = 500  # 每多少轮存入tensorboard
     # disable_word_embeddings = False
-    pre_trianing = None   #use vector_char trained by word2vec
+    pre_training = None   #use vector_char trained by word2vec
 
 class TextCNN(object):
     """文本分类，CNN模型"""
